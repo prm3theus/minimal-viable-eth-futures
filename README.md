@@ -1,6 +1,6 @@
-# minimal-viable-eth-futures (in-progress)
+# minimal-viable-futures (in-progress)
 
-Transfer stake on Futures you Want. Strike at the right time on a Thing if you're Right.
+Transfer stake on units of a Future you Want. Strike at the right time on a Thing if you're Right.
 
 Using Chainlink for Oracle feeds to connect possible Futures with underlying Measurements.
 
