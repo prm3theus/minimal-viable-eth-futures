@@ -1,6 +1,6 @@
 # Minimal Viable Futures ⏲️ (in-progress)
 
-Transfer stake on Units of a Future you Want. Strike at the right time on a Thing if you're Right. ✔️
+Stake on Units of a Future you Want. Strike at the right time on a Thing if you're Right. ✔️
 
 Using [Chainlink](https://chain.link/) for Oracle feeds to connect possible Futures with underlying Measurements. 📏
 
