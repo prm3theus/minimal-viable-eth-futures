@@ -1,7 +1,7 @@
 pragma solidity 0.4.24;
 
 import "@chainlink/contracts/src/v0.4/ChainlinkClient.sol";
-import "@chainlink/contracts/src/v0.4/vendor/Ownable.sol";
+import "openzeppelin-solidity/contracts/ownership/Ownable.sol";
 
 /**
  * @title MyContract is an example contract which requests data from
@@ -9,17 +9,9 @@ import "@chainlink/contracts/src/v0.4/vendor/Ownable.sol";
  * @dev This contract is designed to work on multiple networks, including
  * local test networks
  */
-contract OracleClient is ChainlinkClient, Ownable {
+contract MyContract is ChainlinkClient, Ownable {
   uint256 public data;
-  
-  uint256 constant private ORACLE_PAYMENT = 1 * LINK;
-  
-  // oracle address, predeployed
-  address ORACLE_ADDRESS_KOVAN = 0x858ed25084fc561d3e3403fdcbd6ad92415da6c3;
-  
-  // The Job Id to call 
-  string constant public TOR_JOB__ID_KOVAN = "56906029a60d4c348965a2670de691df";
-  
+
   /**
    * @notice Deploy the contract with a specified address for the LINK
    * and Oracle contract addresses
@@ -44,25 +36,32 @@ contract OracleClient is ChainlinkClient, Ownable {
   }
 
   /**
-   * @dev This is the public implementation returning the contained data
-   */
-  function estimate() public view returns (uint256) {
-    return data;
-  }
-
-  /**
    * @notice Creates a request to the specified Oracle contract address
    * @dev This function ignores the stored Oracle contract address and
    * will instead send the request to the address specified
+   * @param _oracle The Oracle contract address to send the request to
+   * @param _jobId The bytes32 JobID to be executed
+   * @param _url The URL to fetch data from
+   * @param _path The dot-delimited path to parse of the response
+   * @param _times The number to multiply the result by
    */
-  function getStatus()
+  function createRequestTo(
+    address _oracle,
+    bytes32 _jobId,
+    uint256 _payment,
+    string memory _url,
+    string memory _path,
+    int256 _times
+  )
     public
     onlyOwner
     returns (bytes32 requestId)
   {
-      Chainlink.Request memory req = buildChainlinkRequest(stringToBytes32(TOR_JOB__ID_KOVAN), this, this.fulfill.selector);
-      req.add("copyPath", "STATUS");
-      requestId = sendChainlinkRequestTo(ORACLE_ADDRESS_KOVAN, req, ORACLE_PAYMENT);
+    Chainlink.Request memory req = buildChainlinkRequest(_jobId, address(this), this.fulfill.selector);
+    req.add("url", _url);
+    req.add("path", _path);
+    req.addInt("times", _times);
+    requestId = sendChainlinkRequestTo(_oracle, req, _payment);
   }
 
   /**
@@ -85,16 +84,6 @@ contract OracleClient is ChainlinkClient, Ownable {
   function withdrawLink() public onlyOwner {
     LinkTokenInterface link = LinkTokenInterface(chainlinkTokenAddress());
     require(link.transfer(msg.sender, link.balanceOf(address(this))), "Unable to transfer");
-  }
-  
-  function stringToBytes32(string memory source) private pure returns (bytes32 result) {
-    bytes memory tempEmptyStringTest = bytes(source);
-    if (tempEmptyStringTest.length == 0) {
-      return 0x0;
-    }
-    assembly { // solhint-disable-line no-inline-assembly
-      result := mload(add(source, 32))
-    }
   }
 
   /**

@@ -11,7 +11,9 @@
     "lint": "yarn solhint",
     "migrate:dev": "npx truffle migrate --reset --network cldev",
     "migrate:live": "npx truffle migrate --network live",
-    "test:kovan": "NODE_ENV=test npx truffle test --network kovan"
+    "test:kovan": "NODE_ENV=test npx truffle test --network kovan",
+    "test:futures": "npx truffle test test/Futures* --network local",
+    "test": "npx truffle test test/Oracle** --network local"
   },
   "license": "MIT",
   "dependencies": {
@@ -19,15 +21,16 @@
     "@chainlink/test-helpers": "0.0.2",
     "@truffle/debug-utils": "^4.1.1",
     "dotenv": "^8.2.0",
+    "ethereumjs-abi": "^0.6.8",
     "openzeppelin-solidity": "1.12.0"
   },
   "devDependencies": {
     "@chainlink/belt": "^0.0.1",
+    "@truffle/contract": "^5.1.5",
     "@truffle/hdwallet-provider": "^1.0.30",
     "chai": "^4.2.0",
     "depcheck": "^0.9.1",
     "openzeppelin-test-helpers": "^0.4.3",
-    "solhint": "^2.1.0",
-    "truffle": "^5.1.5"
+    "solhint": "^2.1.0"
   }
 }
