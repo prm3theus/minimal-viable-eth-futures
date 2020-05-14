@@ -15,13 +15,13 @@ Using [Chainlink](https://chain.link/) for Oracle feeds to connect possible Futu
 - convert ERC20 token to ERC223 to remove 2 txs into 1 flawless execution
 
 ## TODO
-[x] minimal interface
-[x] testing setup
-[x] connect OracleClient with FutureFactory
-[x] mock oracle feed
-[ ] add chainlink scheduled updates
-[ ] connect with live network
-[ ] fine tune
-[ ] name your thing right -.-
+- [x] minimal interface
+- [x] testing setup
+- [x] connect OracleClient with FutureFactory
+- [x] mock oracle feed
+- [ ] add chainlink scheduled updates
+- [ ] connect with live network
+- [ ] fine tune
+- [ ] name your thing right -.-
 
 LICENSE MIT
