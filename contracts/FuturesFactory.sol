@@ -40,8 +40,6 @@ contract FuturesFactory {
 	event Permit(address indexed who, uint256 indexed amount);
 	event Build(address indexed taker, uint256 indexed id, uint256 expiry);
 	event Strike(address indexed striker, uint256 indexed id,  uint256 time);
-	event LogTime(uint256 indexed value);
-	// event LogBool(bool indexed succeed);
 
 	/**
 		* @dev deploy a Futures Factory & Oracle Client	
@@ -55,12 +53,6 @@ contract FuturesFactory {
 		oracleClient = OracleClient(_oracle);
 	}
 
-	// function permit(uint256 _amount) public returns(bool done) {
-	// 	emit Permit(address(this), _amount);
-	// 	ERC20(token).approve(address(this), _amount);
-	// 	return true;
-	// }
-
 	/**	
 		* @dev This calls an estimate for the market
 		* @param _market 		The calling market
@@ -71,7 +63,6 @@ contract FuturesFactory {
 
 	/**
 		* @dev This function builds a futures contract, called by a taker
-
 		* @param _future 	The future struct
 	*/
 	function build(Future memory _future, bytes memory _sig) public returns(bool done) {
@@ -112,7 +103,6 @@ contract FuturesFactory {
 
 	/**
 		* @dev This function closes a futures contract, called by a buyer or seller
-
 		* @param _id 			The id of the contract on-chain
 	*/
 	function strike(uint256 _id) external returns(bool done) {
@@ -123,22 +113,19 @@ contract FuturesFactory {
 	   	// check owner
 	   	require(future.taker == msg.sender || future.maker == msg.sender, "FuturesFactory#strike: NOT_FUTURE_PARTICIPANT");
 	   	
-	   	// emit LogTime(now);
-	   	// emit LogTime(future.expiry);
-
 	   	// check if the time is after a certin date
 	   	require(future.expiry <= now, "FuturesFactory#strike: TIME_NOT_EXPIRED");
 	   	
 	   	// get oracle reference data
-	   	uint256 indexValue = oracleClient.estimate();
+	   	uint256 indexValue = quote();
 
 		// transfer funds
 	   	if(indexValue >= future.value) {
 	   		// maker wins contract, margin amounts get transferred
-		   	ERC20(token).transfer(future.maker, future.value*2);
-   		} else{
+		   	ERC20(token).transfer(future.maker, future.value * 2);
+   		} else {
    			// taker wins contract, margin amounts get transferred
-		   	ERC20(token).transfer(future.taker, future.value*2);
+		   	ERC20(token).transfer(future.taker, future.value * 2);
    		}
 
    		// empty balances
@@ -152,6 +139,4 @@ contract FuturesFactory {
 
 	   	return true;
 	}
-
-	function() public payable {}  
 }
