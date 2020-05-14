@@ -1,14 +1,15 @@
-pragma solidity 0.4.24;
+pragma experimental ABIEncoderV2;
 
 // TODO: import from open-zepplin
+import "openzeppelin-solidity/contracts/token/ERC20/MintableToken.sol";
 import "openzeppelin-solidity/contracts/token/ERC20/ERC20.sol";
 import "openzeppelin-solidity/contracts/math/SafeMath.sol";
 import "openzeppelin-solidity/contracts/ECRecovery.sol";
 
 import './OracleClient.sol';
-import './lib/IFuturesFactory.sol';
+// import './lib/IFuturesFactory.sol';
 
-contract FuturesFactory is IFuturesFactory {
+contract FuturesFactory {
 	
 	// libs
 	using SafeMath for uint256;
@@ -22,10 +23,10 @@ contract FuturesFactory is IFuturesFactory {
 
 	// future data structure
 	struct Future {
-		address buyer;
-		address seller;
+		address maker;
+		address taker;
 		uint256 value;
-		bytes32 thing;
+		string thing;
 		uint256 expiry;
 		bool terminated;
 	}
@@ -33,10 +34,14 @@ contract FuturesFactory is IFuturesFactory {
 	// mapping the futures
 	mapping (address => uint256[]) public futuresBySeller; 
 	mapping (uint256 => Future) public futures;
+	mapping (address => uint256) public margin;
 
 	// futures event triggers
-	event Build(address indexed builder, uint256 indexed id, uint256 expiry);
+	event Permit(address indexed who, uint256 indexed amount);
+	event Build(address indexed taker, uint256 indexed id, uint256 expiry);
 	event Strike(address indexed striker, uint256 indexed id,  uint256 time);
+	event LogTime(uint256 indexed value);
+	// event LogBool(bool indexed succeed);
 
 	/**
 		* @dev deploy a Futures Factory & Oracle Client	
@@ -50,6 +55,12 @@ contract FuturesFactory is IFuturesFactory {
 		oracleClient = OracleClient(_oracle);
 	}
 
+	// function permit(uint256 _amount) public returns(bool done) {
+	// 	emit Permit(address(this), _amount);
+	// 	ERC20(token).approve(address(this), _amount);
+	// 	return true;
+	// }
+
 	/**	
 		* @dev This calls an estimate for the market
 		* @param _market 		The calling market
@@ -59,44 +70,41 @@ contract FuturesFactory is IFuturesFactory {
 	}
 
 	/**
-		* @dev This gives a seller permission to exchange funds on command
-	*/
-	function permission() public returns (bool done) {
-		ERC20(token).approve(msg.sender, msg.value);
-		return true;
-	}
+		* @dev This function builds a futures contract, called by a taker
 
-	/**
-		* @dev This function builds a futures contract, called by a buyer
-
-		* @param _sellerAddr 	The Oracle contract address to send the request to
-		* @param _value 		The value of the future
-		* @param _expiry 		The strike time of the contract
-		* @param _thing 		The metadata of the thing
-		* @param _sig 			The signature of the off-chain contract
+		* @param _future 	The future struct
 	*/
-	function build(address _sellerAddr, uint256 _value, uint256 _expiry, bytes32 _thing, bytes32 _sig) payable external returns(bool done) {
+	function build(Future memory _future, bytes memory _sig) public returns(bool done) {
 		
-		// unravel signature, get address
-		// address signer = _hash.toEthSignedMessageHash().recover(_sig);
-
-		// TODO: match signature with future
+		// TODO: solve reentrancy attack with nonce
+		bytes32 message = keccak256(abi.encodePacked(_future.maker, _future.value, _future.thing, _future.expiry));
+		bytes32 preFixedMessage = message.toEthSignedMessageHash();
 
 		// check the correct seller signer the message
-		// require(signer == _sellerAddr, "FuturesFactory#build: INCORRECT_SIGNER");
-		
-		// check if funds are adequate
-		require(msg.value == _value, "FuturesFactory#build: INADEQUATE_FUNDS");
+		require(_future.maker == ECRecovery.recover(preFixedMessage, _sig), "FuturesFactory#build: INCORRECT_SIGNER");
 
-		// build future 
-		Future memory future = Future(msg.sender, _sellerAddr, _value, _thing, _expiry, false);
+		// transfer from the approved maker address
+		require(ERC20(token).transferFrom(_future.maker, address(this), _future.value), "FuturesFactory#build: INADEQUATE_FUNDS_BY_MAKER");
+		
+		// transfer from taker as a delegated call to pass storage context in this method call
+		require(ERC20(token).transferFrom(msg.sender, address(this), _future.value), "FuturesFactory#build: INADEQUATE_FUNDS_BY_TAKER");
+
+		// TODO: y u no work?
+		// require(token.delegatecall(bytes4(sha3("transfer(address,uint256)")), address(this), _future.value), "FuturesFactory#build: INADEQUATE_FUNDS_BY_TAKER");
+
+		// add balance to the contract
+		margin[_future.taker] += _future.value;
+		margin[_future.maker] += _future.value;
+
+		// assign the builder as the taker
+		_future.taker = msg.sender;
 
 		// creating factory index
-		futuresBySeller[_sellerAddr].push(count);
-		futures[count] = future;
+		futuresBySeller[ _future.maker].push(count);
+		futures[count] = _future;
 		count++;
 
-		emit Build(msg.sender, count, _expiry);
+		emit Build(msg.sender, count, _future.expiry);
 
 		return true;
 	}
@@ -109,31 +117,41 @@ contract FuturesFactory is IFuturesFactory {
 	*/
 	function strike(uint256 _id) external returns(bool done) {
 	   	
-	   	// check owner
-	   	require(futures[_id].buyer == msg.sender || futures[_id].seller == msg.sender, "FuturesFactory#strike: NOT_FUTURE_PARTICIPANT");
-	   	
-	   	// check if the time is after a certin date
-	   	require(futures[_id].expiry <= now, "FuturesFactory#strike: INADEQUATE_FUNDS");
-	   	
-	   	// check if the price is equal
-	   	uint256 value = futures[_id].value;
-	   	// uint256 indexValue = oracleClient.estimate();
-	   	// uint256 indexValue = oracleClient.getIndex();
+	   	// todo: check if future is valid
+	   	Future memory future = futures[_id];
 
-	   	// require(indexValue >= value, "FuturesFactory#strike: VALUE_NOT_AT_STRIKE_LEVEL");
+	   	// check owner
+	   	require(future.taker == msg.sender || future.maker == msg.sender, "FuturesFactory#strike: NOT_FUTURE_PARTICIPANT");
+	   	
+	   	// emit LogTime(now);
+	   	// emit LogTime(future.expiry);
+
+	   	// check if the time is after a certin date
+	   	require(future.expiry <= now, "FuturesFactory#strike: TIME_NOT_EXPIRED");
+	   	
+	   	// get oracle reference data
+	   	uint256 indexValue = oracleClient.estimate();
+
+		// transfer funds
+	   	if(indexValue >= future.value) {
+	   		// maker wins contract, margin amounts get transferred
+		   	ERC20(token).transfer(future.maker, future.value*2);
+   		} else{
+   			// taker wins contract, margin amounts get transferred
+		   	ERC20(token).transfer(future.taker, future.value*2);
+   		}
+
+   		// empty balances
+   		margin[future.taker] -= future.value;
+		margin[future.maker] -= future.value;
 
 	   	//terminate future
 	   	futures[_id].terminated = true;
-
-		// transfer funds
-	   	// if(difference > 0) {
-		   	// ER20(buyer).send(value);
-   		// } else{
-		   	// ER20(seller).send(value);
-   		// }
 
 	   	emit Strike(msg.sender, _id, now);
 
 	   	return true;
 	}
+
+	function() public payable {}  
 }

@@ -1,7 +1,9 @@
 pragma solidity 0.4.24;
 
 import "@chainlink/contracts/src/v0.4/ChainlinkClient.sol";
-import "@chainlink/contracts/src/v0.4/vendor/Ownable.sol";
+// import "@chainlink/contracts/src/v0.4/vendor/Ownable.sol";
+import "openzeppelin-solidity/contracts/ownership/Ownable.sol";
+
 
 /**
  * @title MyContract is an example contract which requests data from
@@ -27,6 +29,7 @@ contract OracleClient is ChainlinkClient, Ownable {
    * @param _link The address of the LINK token contract
    */
   constructor(address _link) public {
+    data = 10;
     if (_link == address(0)) {
       setPublicChainlinkToken();
     } else {
@@ -47,6 +50,7 @@ contract OracleClient is ChainlinkClient, Ownable {
    * @dev This is the public implementation returning the contained data
    */
   function estimate() public view returns (uint256) {
+    //TODO: get % from an array of values
     return data;
   }
 
