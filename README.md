@@ -9,11 +9,6 @@ Using [Chainlink](https://chain.link/) for Oracle feeds to connect possible Futu
 * Oracle Address (kovan): 0x858ed25084fc561d3e3403fdcbd6ad92415da6c3
 * Job Id: 				        2652051ded0443148ab7e6184792adf0
 
-- solve reentrancy on signed tx
-- solve expired futures if balance is < amount
-- add contract price / amount vs. just value
-- convert ERC20 token to ERC223 to remove 2 txs into 1 flawless execution
-
 ## TODO
 - [x] minimal interface
 - [x] testing setup
@@ -23,5 +18,11 @@ Using [Chainlink](https://chain.link/) for Oracle feeds to connect possible Futu
 - [ ] connect with live network
 - [ ] fine tune
 - [ ] name your thing right -.-
+
+### possible v2
+- solve reentrancy on signed tx
+- solve expired futures if balance is < amount
+- add contract price / amount vs. just value
+- convert ERC20 token to ERC223 to remove 2 txs into 1 flawless execution
 
 LICENSE MIT
