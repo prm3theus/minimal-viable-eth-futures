@@ -1,4 +1,4 @@
-# Minimal Viable Futures ⏲️ (in-progress)
+# Minimal Viable Futures ⏲️
 
 Stake on Units of a Future you Want. Strike at the right time on a Thing if you're Right. ✔️
 
