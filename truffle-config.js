@@ -11,10 +11,13 @@ module.exports = {
       network_id: '*',
       skipDryRun: true,
     },
-    // kovan: {
-    //   provider: () => {
-    //     return new HDWalletProvider(process.env.PRIV_KEY, process.env.RPC_URL)
-    //   },
+    kovan: {
+      provider: () => {
+        return new HDWalletProvider(process.env.PRIV_KEY, process.env.RPC_URL)
+      },
+      network_id: 42,
+      gas: 5000000
+    }
     //   network_id: '*',
     //   // Necessary due to https://github.com/trufflesuite/truffle/issues/1971
     //   // Should be fixed in Truffle 5.0.17
@@ -25,5 +28,5 @@ module.exports = {
     solc: {
       version: '0.4.24',
     },
-  },
+  }
 }

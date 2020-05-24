@@ -20,12 +20,14 @@ contract FuturesFactory {
 	string public market;
 	address public token;
 	uint256 public count;
+	uint256 public premiumRate;
 
 	// future data structure
 	struct Future {
 		address maker;
 		address taker;
 		uint256 value;
+		uint256 index;
 		string thing;
 		uint256 expiry;
 		bool terminated;
@@ -40,16 +42,18 @@ contract FuturesFactory {
 	event Permit(address indexed who, uint256 indexed amount);
 	event Build(address indexed taker, uint256 indexed id, uint256 expiry);
 	event Strike(address indexed striker, uint256 indexed id,  uint256 time);
+	event LogQuote(string indexed market, uint256 indexed quote);
 
 	/**
 		* @dev deploy a Futures Factory & Oracle Client	
 		* @param _market The address of the LINK token contract
 		* @param _token The address of the LINK token contract
    */
-	constructor(string _market, address _token, address _oracle) public {
+	constructor(string _market, address _token, uint256 _rate, address _oracle) public {
 		market = _market;
 		token = _token;
 		count = 0;
+		premiumRate = _rate;
 		oracleClient = OracleClient(_oracle);
 	}
 
@@ -58,7 +62,9 @@ contract FuturesFactory {
 		* @param _market 		The calling market
 	*/
 	function quote(string _market) public returns(uint256 value) {
-		return oracleClient.estimate();
+		uint256 q = oracleClient.estimate(_market);
+		emit LogQuote(_market, q);
+		return q;
 	}
 
 	/**
@@ -80,7 +86,7 @@ contract FuturesFactory {
 		// transfer from taker as a delegated call to pass storage context in this method call
 		require(ERC20(token).transferFrom(msg.sender, address(this), _future.value), "FuturesFactory#build: INADEQUATE_FUNDS_BY_TAKER");
 
-		// TODO: y u no work?
+		// TODO: y u no work? USE ERC1077
 		// require(token.delegatecall(bytes4(sha3("transfer(address,uint256)")), address(this), _future.value), "FuturesFactory#build: INADEQUATE_FUNDS_BY_TAKER");
 
 		// add balance to the contract
@@ -117,10 +123,17 @@ contract FuturesFactory {
 	   	require(future.expiry <= now, "FuturesFactory#strike: TIME_NOT_EXPIRED");
 	   	
 	   	// get oracle reference data
-	   	uint256 indexValue = quote();
+	   	uint256 indexValue = quote(future.thing);
+
+	   	// calculate premium
+	   	uint256 premium = premiumRate / 100 * future.value;
+   		uint256 value = future.value - premium;
+
+   		// transfer premium
+		ERC20(token).transfer(future.maker, premium);
 
 		// transfer funds
-	   	if(indexValue >= future.value) {
+	   	if(indexValue >= future.index) {
 	   		// maker wins contract, margin amounts get transferred
 		   	ERC20(token).transfer(future.maker, future.value * 2);
    		} else {

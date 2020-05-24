@@ -7,9 +7,13 @@ const abi = require('ethereumjs-abi');
 const { LinkToken } = require('@chainlink/contracts/truffle/v0.4/LinkToken')
 // const { Oracle } = require('@chainlink/contracts/truffle/v0.4/Oracle')
 
+const ethers = require('ethers')
+const utils = ethers.utils
+
 const market = "FU"
 const INITIAL_SUPPLY = 12000
 const BALANCE = 1000
+const premium = 1
 
 // TODO: seperate value into contract price & index
 const value = 100
@@ -32,7 +36,7 @@ contract('FuturesFactory', (accounts, network) => {
     token = await MagicToken.new({ from: defaultAccount })
     link = await LinkToken.new({ from: defaultAccount })
     oc = await OracleClient.new(link.address, { from: defaultAccount })
-    ff = await FuturesFactory.new(market, token.address, oc.address, { from: defaultAccount })
+    ff = await FuturesFactory.new(market, token.address, premium, oc.address, { from: defaultAccount })
     await token.mint(taker, 1000, {from: defaultAccount})
     await token.mint(maker, 1000, {from: defaultAccount})
 
@@ -121,5 +125,43 @@ contract('FuturesFactory', (accounts, network) => {
         }
 
       })
+
+
+      it.only('checks quote', async () => {
+
+        const id = '6b3epqaty52ub6tw.onion'
+        const possibleStatuses = [200, 404, 500]
+
+        let bytes32
+
+        // add statuses
+        bytes32 = utils.formatBytes32String(`${id},${possibleStatuses[0]}`)
+        await oc.update(bytes32, {from: defaultAccount})
+        bytes32 = utils.formatBytes32String(`${id},${possibleStatuses[2]}`)
+        await oc.update(bytes32, {from: defaultAccount})
+        bytes32 = utils.formatBytes32String(`${id},${possibleStatuses[2]}`)
+        await oc.update(bytes32, {from: defaultAccount})
+        bytes32 = utils.formatBytes32String(`${id},${possibleStatuses[2]}`)
+        await oc.update(bytes32, {from: defaultAccount})
+
+        const tx = await ff.quote(id, {from: taker})
+
+        assert(Number(tx.logs[0].args.quote.toString()) == 3)
+      })
+
+      it.only('pays a premium to the maker', async () => {
+
+        // maker builds
+
+        // adds statuses
+
+        // taker strikes
+
+        assert(true)
+      })
+
+      // it('', async () => {
+
+      // })
   })
 })
