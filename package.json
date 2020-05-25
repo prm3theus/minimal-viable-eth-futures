@@ -10,7 +10,7 @@
     "solhint": "solhint ./contracts/**/*.sol",
     "lint": "yarn solhint",
     "migrate:dev": "npx truffle migrate --reset --network cldev",
-    "migrate:live": "npx truffle migrate --network live",
+    "migrate:live": "npx truffle migrate --network kovan",
     "test:kovan": "NODE_ENV=test npx truffle test --network kovan",
     "test:futures": "npx truffle test test/Futures* --network local",
     "test": "npx truffle test test/Oracle** --network local"

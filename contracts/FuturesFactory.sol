@@ -42,6 +42,7 @@ contract FuturesFactory {
 	event Permit(address indexed who, uint256 indexed amount);
 	event Build(address indexed taker, uint256 indexed id, uint256 expiry);
 	event Strike(address indexed striker, uint256 indexed id,  uint256 time);
+	event Log(uint256 indexed value);
 	event LogQuote(string indexed market, uint256 indexed quote);
 
 	/**
@@ -125,20 +126,22 @@ contract FuturesFactory {
 	   	// get oracle reference data
 	   	uint256 indexValue = quote(future.thing);
 
-	   	// calculate premium
+	   	// calculate premium: TODO: add time on premium
 	   	uint256 premium = premiumRate / 100 * future.value;
-   		uint256 value = future.value - premium;
 
-   		// transfer premium
+   		// uint256 value = future.value - premium;
+   		emit Log(premium);
+
+   		// transfer premium to maker
 		ERC20(token).transfer(future.maker, premium);
 
 		// transfer funds
 	   	if(indexValue >= future.index) {
 	   		// maker wins contract, margin amounts get transferred
-		   	ERC20(token).transfer(future.maker, future.value * 2);
+		   	ERC20(token).transfer(future.maker, future.value * 2 - premium);
    		} else {
    			// taker wins contract, margin amounts get transferred
-		   	ERC20(token).transfer(future.taker, future.value * 2);
+		   	ERC20(token).transfer(future.taker, future.value * 2 - premium);
    		}
 
    		// empty balances
@@ -152,4 +155,5 @@ contract FuturesFactory {
 
 	   	return true;
 	}
+
 }

@@ -15,7 +15,7 @@ module.exports = (deployer, network, [defaultAccount]) => {
         	return deployer
         	.deploy(Token, {from: defaultAccount})
         	.then((token) => {
-          		return deployer.deploy(FuturesFactory, "FU", token.address, 1, client.address)
+          		return deployer.deploy(FuturesFactory, "FU", token.address, 2, client.address)
         	})
 
         })

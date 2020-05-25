@@ -13,7 +13,7 @@ const utils = ethers.utils
 const market = "FU"
 const INITIAL_SUPPLY = 12000
 const BALANCE = 1000
-const premium = 1
+const premium = 2
 
 // TODO: seperate value into contract price & index
 const value = 100
@@ -58,7 +58,7 @@ contract('FuturesFactory', (accounts, network) => {
         assert(balanceCall == BALANCE)
       })
 
-      it('builds a future contract with signature', async () => {
+      it.only('builds a future contract with signature', async () => {
 
         // Create Hashed Message
         const hash = "0x" + abi.soliditySHA3([
@@ -78,6 +78,7 @@ contract('FuturesFactory', (accounts, network) => {
           value: value,
           thing: thing,
           expiry: expiry,
+          index: 3,
           terminated: false
         }
 
@@ -103,29 +104,6 @@ contract('FuturesFactory', (accounts, network) => {
         }
       })
 
-      it('calls strike on the future and executes transfer', async () => {
-        let tx
-
-        try{
-          console.log(`Expiry: ${expiry}`)
-          // update oracle price
-          tx = await ff.strike(0, {from: taker})
-          const takerBalance = Number((await token.balanceOf(taker)).toString());
-          const makerBalance = Number((await token.balanceOf(maker)).toString());
-          console.log(`taker: ${takerBalance}`)
-          console.log(`maker: ${makerBalance}`)
-
-          // maker balance is less the value of the contract
-          assert(BALANCE - value == makerBalance)
-          // taker balance has the value added
-          assert(BALANCE + value == takerBalance)
-        }catch(e){
-          console.log(e)
-          assert(false)
-        }
-
-      })
-
 
       it.only('checks quote', async () => {
 
@@ -141,24 +119,83 @@ contract('FuturesFactory', (accounts, network) => {
         await oc.update(bytes32, {from: defaultAccount})
         bytes32 = utils.formatBytes32String(`${id},${possibleStatuses[2]}`)
         await oc.update(bytes32, {from: defaultAccount})
-        bytes32 = utils.formatBytes32String(`${id},${possibleStatuses[2]}`)
-        await oc.update(bytes32, {from: defaultAccount})
 
         const tx = await ff.quote(id, {from: taker})
 
-        assert(Number(tx.logs[0].args.quote.toString()) == 3)
+        assert(Number(tx.logs[0].args.quote.toString()) == 2)
       })
 
-      it.only('pays a premium to the maker', async () => {
 
-        // maker builds
+      it.only('calls strike on the future and executes transfer', async () => {
+        let tx
 
-        // adds statuses
+        try{
 
-        // taker strikes
+          // console.log(`Expiry: ${expiry}`)
 
-        assert(true)
+          // update oracle price
+          tx = await ff.strike(0, {from: taker})
+          const takerBalance = Number((await token.balanceOf(taker)).toString());
+          const makerBalance = Number((await token.balanceOf(maker)).toString());
+          console.log(`taker: ${takerBalance}`)
+          console.log(`maker: ${makerBalance}`)
+
+          console.log('tx.logs')
+          console.log(tx.logs)
+
+          // maker balance is less the value of the contract
+          assert(BALANCE - value == makerBalance)
+          // taker balance has the value added
+          assert(BALANCE + value == takerBalance)
+        }catch(e){
+          console.log(e)
+          assert(false)
+        }
+
       })
+
+      it.only('calls strike on the future and executes transfer', async () => {
+        let tx
+
+        try{
+          // console.log(`Expiry: ${expiry}`)
+          const id = '6b3epqaty52ub6tw.onion'
+          const possibleStatuses = [200, 404, 500]
+
+
+          bytes32 = utils.formatBytes32String(`${id},${possibleStatuses[2]}`)
+          await oc.update(bytes32, {from: defaultAccount})
+
+          // update oracle price
+          tx = await ff.strike(0, {from: taker})
+          const takerBalance = Number((await token.balanceOf(taker)).toString());
+          const makerBalance = Number((await token.balanceOf(maker)).toString());
+          console.log(`taker: ${takerBalance}`)
+          console.log(`maker: ${makerBalance}`)
+
+
+          // maker balance is less the value of the contract
+          assert(BALANCE - value == makerBalance)
+          // taker balance has the value added
+          assert(BALANCE + value == takerBalance)
+        }catch(e){
+          console.log(e)
+          assert(false)
+        }
+
+      })
+
+      // it.only('pays a premium to the maker', async () => {
+
+      //   // taker strikes
+      //   tx = await ff.strike(0, {from: taker})
+
+      //   const takerBalance = Number((await token.balanceOf(taker)).toString());
+      //   const makerBalance = Number((await token.balanceOf(maker)).toString());
+      //   console.log(`taker: ${takerBalance}`)
+      //   console.log(`maker: ${makerBalance}`)
+      //   assert(true)
+      // })
 
       // it('', async () => {
 
