@@ -20,7 +20,8 @@ Using [Chainlink](https://chain.link/) for Oracle feeds to connect possible Futu
 - [ ] name your thing right -.-
 
 ### possible v2
-- solve reentrancy on signed tx
+- solve reentrancy on signed 
+- safemath
 - solve expired futures if balance is < amount
 - add contract price / amount vs. just value
 - convert ERC20 token to ERC223 to remove 2 txs into 1 flawless execution
